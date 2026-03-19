@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../../model/ride/ride.dart';
 import '../../../model/ride_pref/ride_pref.dart';
-import '../../../services/ride_prefs_service.dart';
 import '../../../services/rides_service.dart';
 import '../../../utils/animations_util.dart' show AnimationUtils;
 import '../../theme/theme.dart';
 import 'widgets/ride_preference_modal.dart';
 import 'widgets/rides_selection_header.dart';
 import 'widgets/rides_selection_tile.dart';
+import 'package:blabla/ui/states/ride_preference_state.dart';
+import 'package:provider/provider.dart';
 
 ///
 ///  The Ride Selection screen allows user to select a ride, once ride preferences have been defined.
@@ -35,32 +36,29 @@ class _RidesSelectionScreenState extends State<RidesSelectionScreen> {
     // Later
   }
 
-  RidePreference get selectedRidePreference =>
-      RidePrefsService.selectedPreference!; // not null at this state
-
-  List<Ride> get matchingRides =>
-      RidesService.getRidesFor(selectedRidePreference);
-
   void onPreferencePressed() async {
+    final state = context.read<RidePreferenceState>();
+
     // 1 - Navigate to the rides preference picker
     RidePreference? newPreference = await Navigator.of(context)
         .push<RidePreference>(
           AnimationUtils.createRightToLeftRoute(
-            RidePreferenceModal(initialPreference: selectedRidePreference),
+            RidePreferenceModal(initialPreference: state.currentRidePreference!),
           ),
         );
 
     if (newPreference != null) {
-      // 2 - Ask the service to update the current preference
-      RidePrefsService.selectPreference(newPreference);
-
-      // 3 -   Update the widget state  - TODO Improve this with proper state managagement
-      setState(() {});
+      // 2 - Ask the state to update the current preference
+      state.selectRidePreference(newPreference);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final ridePreferenceState = context.watch<RidePreferenceState>();
+    final selectedRidePreference = ridePreferenceState.currentRidePreference!;
+    final matchingRides = RidesService.getRidesFor(selectedRidePreference);
+
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.only(
