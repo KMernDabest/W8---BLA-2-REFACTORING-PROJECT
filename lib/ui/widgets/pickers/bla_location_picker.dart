@@ -1,9 +1,10 @@
-import '../../../services/location_service.dart';
+// import '../../../services/location_service.dart';
 import '../../../ui/widgets/display/bla_divider.dart';
 import 'package:flutter/material.dart';
-
+import 'package:blabla/data/repositories/location/location_repository.dart';
 import '../../../model/ride/locations.dart';
 import '../../theme/theme.dart';
+import 'package:provider/provider.dart';
 
 ///
 /// A  Location Picker is a view to pick a Location:
@@ -47,10 +48,13 @@ class _BlaLocationPickerState extends State<BlaLocationPicker> {
   }
 
   List<Location> get filteredLocation {
+    final locationRepository = context.read<LocationRepository>();
+    final locations = locationRepository.getAvailableLocations();
+    
     if (currentSearchText.length < 2) {
       return [];
     }
-    return LocationsService.availableLocations
+    return locations
         .where(
           (location) => location.name.toUpperCase().contains(
             currentSearchText.toUpperCase(),
