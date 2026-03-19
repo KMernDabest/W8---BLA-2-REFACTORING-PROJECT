@@ -1,13 +1,11 @@
-import 'package:flutter/material.dart';
-import '../../../model/ride/ride.dart';
-import '../../../model/ride_pref/ride_pref.dart';
-import '../../../services/rides_service.dart';
-import '../../../utils/animations_util.dart' show AnimationUtils;
-import '../../theme/theme.dart';
-import 'widgets/ride_preference_modal.dart';
-import 'widgets/rides_selection_header.dart';
-import 'widgets/rides_selection_tile.dart';
+import 'package:blabla/data/repositories/ride/ride_repository.dart';
+import 'package:blabla/model/ride_pref/ride_pref.dart';
+import 'package:blabla/ui/screens/rides_selection/viewmodel/ride_selection_model.dart';
+import 'package:blabla/ui/screens/rides_selection/widgets/ride_preference_modal.dart';
+import 'package:blabla/ui/screens/rides_selection/widgets/ride_selection_content.dart';
 import 'package:blabla/ui/states/ride_preference_state.dart';
+import 'package:blabla/utils/animations_util.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 ///
@@ -24,68 +22,49 @@ class RidesSelectionScreen extends StatefulWidget {
 }
 
 class _RidesSelectionScreenState extends State<RidesSelectionScreen> {
-  void onBackTap() {
+  late RidesSelectionViewModel _viewModel;
+
+  @override
+  void initState() {
+    super.initState();
+    _viewModel = RidesSelectionViewModel(
+      ridePreferenceState: context.read<RidePreferenceState>(),
+      rideRepository: context.read<RideRepository>(),
+    );
+  }
+
+  void _onBackRequested() {
     Navigator.pop(context);
   }
 
-  void onFilterPressed() {
+  void _onFilterPressed() {
     // TODO
   }
 
-  void onRideSelected(Ride ride) {
-    // Later
-  }
-
-  void onPreferencePressed() async {
-    final state = context.read<RidePreferenceState>();
-
-    // 1 - Navigate to the rides preference picker
-    RidePreference? newPreference = await Navigator.of(context)
-        .push<RidePreference>(
-          AnimationUtils.createRightToLeftRoute(
-            RidePreferenceModal(initialPreference: state.currentRidePreference!),
-          ),
-        );
-
+  Future<void> _onPreferenceChangeRequested() async {
+    final newPreference = await Navigator.of(context).push<RidePreference>(
+      AnimationUtils.createRightToLeftRoute(
+        RidePreferenceModal(initialPreference: _viewModel.selectedRidePreference),
+      ),
+    );
     if (newPreference != null) {
-      // 2 - Ask the state to update the current preference
-      state.selectRidePreference(newPreference);
+      _viewModel.selectRidePreference(newPreference);
     }
   }
 
   @override
-  Widget build(BuildContext context) {
-    final ridePreferenceState = context.watch<RidePreferenceState>();
-    final selectedRidePreference = ridePreferenceState.currentRidePreference!;
-    final matchingRides = RidesService.getRidesFor(selectedRidePreference);
+  void dispose() {
+    _viewModel.dispose();
+    super.dispose();
+  }
 
-    return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.only(
-          left: BlaSpacings.m, right: BlaSpacings.m, top: BlaSpacings.s),
-        child: Column(
-          children: [
-            RideSelectionHeader(
-              ridePreference: selectedRidePreference,
-              onBackPressed: onBackTap,
-              onFilterPressed: onFilterPressed,
-              onPreferencePressed: onPreferencePressed,
-            ),
-        
-            SizedBox(height: 100),
-        
-            Expanded(
-              child: ListView.builder(
-                itemCount: matchingRides.length,
-                itemBuilder: (ctx, index) => RideSelectionTile(
-                  ride: matchingRides[index],
-                  onPressed: () => onRideSelected(matchingRides[index]),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+  @override
+  Widget build(BuildContext context) {
+    return RideSelectionContent(
+      viewModel: _viewModel,
+      onBackRequested: _onBackRequested,
+      onFilterPressed: _onFilterPressed,
+      onPreferenceChangeRequested: _onPreferenceChangeRequested,
     );
   }
 }
